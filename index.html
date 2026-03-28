@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#222;
+    --border:#2a2a2a; --border2:#333;
+    --text:#f0ede8; --muted:#888; --dim:#555;
+    --accent:#c8f060; --over:#f0a060; --under:#60c8f0;
+    --neutral:#888; --green:#5dca95; --red:#e06060;
+    --mono:'DM Mono',monospace; --sans:'DM Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh;padding:2rem;}
+
+  /* HEADER */
+  .header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:1.5rem;}
+  .header-left h1{font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+  .header-left h2{font-size:28px;font-weight:600;letter-spacing:-.02em;}
+  .inputs-row{display:flex;gap:1.5rem;align-items:flex-end;flex-wrap:wrap;}
+  .input-group{display:flex;flex-direction:column;gap:5px;}
+  .input-group label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .nok-input{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--accent);font-family:var(--mono);font-size:20px;font-weight:500;padding:7px 12px;width:210px;text-align:right;outline:none;transition:border-color .15s;letter-spacing:-.01em;}
+  .nok-input:focus{border-color:var(--accent);}
+  .input-sub{font-size:11px;color:var(--dim);text-align:right;}
+
+  /* GRIDS */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem;}
+  .grid-6{display:grid;grid-template-columns:repeat(6,1fr);gap:1rem;margin-bottom:1.5rem;}
+  @media(max-width:900px){.grid-6{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:600px){.grid-2{grid-template-columns:1fr;}.grid-6{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:1fr 1fr;}body{padding:1rem;}.nok-input{width:170px;font-size:17px;}#inputReturn{width:80px !important;}}
+
+  /* CARDS */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;}
+  .card-title{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;}
+  .stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .stat-value{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text);letter-spacing:-.02em;}
+  .stat-sub{font-size:11px;color:var(--dim);margin-top:4px;}
+  .stat-diff{font-family:var(--mono);font-size:11px;margin-top:3px;}
+
+  /* FUND TABLE */
+  .fund-table{width:100%;border-collapse:collapse;}
+  .fund-table th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:0 0 10px 0;text-align:left;border-bottom:1px solid var(--border);}
+  .fund-table th:not(:first-child){text-align:right;}
+  .fund-table td{padding:10px 0;border-bottom:1px solid var(--border);vertical-align:middle;}
+  .fund-table tr:last-child td{border-bottom:none;}
+  .fund-table td:not(:first-child){text-align:right;font-family:var(--mono);font-size:13px;}
+  .fund-name{font-size:13px;font-weight:500;color:var(--text);}
+  .fund-sub{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:1px;}
+  .w-bar-outer{height:3px;background:var(--border2);border-radius:2px;margin-top:5px;}
+  .w-bar-inner{height:3px;border-radius:2px;transition:width .3s;}
+
+  /* WEIGHT INPUT */
+  .weight-input{background:transparent;border:none;border-bottom:1px solid var(--border2);color:var(--accent);font-family:var(--mono);font-size:13px;font-weight:500;width:48px;text-align:right;outline:none;padding:2px 0;transition:border-color .15s;}
+  .weight-input:focus{border-bottom-color:var(--accent);}
+  .weight-pct{font-family:var(--mono);font-size:13px;color:var(--accent);}
+  .total-warn{font-family:var(--mono);font-size:11px;color:var(--red);margin-left:8px;display:none;}
+
+  /* REGION TABLE */
+  .region-row{display:grid;grid-template-columns:130px 1fr 60px 60px 80px 90px;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .region-row:last-child{border-bottom:none;}
+  .region-row.hdr{padding-bottom:8px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+  .region-name{font-size:13px;font-weight:500;}
+  .region-num{font-family:var(--mono);font-size:13px;text-align:right;}
+  .region-diff{font-family:var(--mono);font-size:12px;text-align:right;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:10px;text-align:center;}
+  .pill-over{background:rgba(240,160,96,.15);color:var(--over);}
+  .pill-under{background:rgba(96,200,240,.15);color:var(--under);}
+  .pill-neutral{background:rgba(136,136,136,.12);color:var(--neutral);}
+
+  /* DONUT */
+  .donut-legend{margin-top:1rem;display:flex;flex-direction:column;gap:6px;}
+  .dleg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+  .dleg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .dleg-val{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text);}
+
+  /* COST BOX */
+  .cost-box{background:rgba(200,240,96,.06);border:1px solid rgba(200,240,96,.15);border-radius:8px;padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;margin-top:.75rem;}
+  .cost-box .lbl{font-size:13px;color:var(--muted);}
+  .cost-box .val{font-family:var(--mono);font-size:18px;color:var(--accent);font-weight:500;}
+
+  .footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.08em;}
+
+  /* ACTION BUTTONS */
+  .action-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--accent);font-family:var(--mono);font-size:11px;padding:8px 16px;cursor:pointer;letter-spacing:.05em;transition:border-color .15s,background .15s;}
+  .action-btn:hover{border-color:var(--accent);background:rgba(200,240,96,.08);}
+
+  /* COST COMP */
+  .cc-row{display:grid;grid-template-columns:1fr 80px 80px 90px;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);}
+  .cc-row:last-child{border-bottom:none;}
+  .cc-row.cc-hdr{padding-bottom:6px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+  .cc-input{background:transparent;border:none;border-bottom:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:13px;width:58px;text-align:right;outline:none;padding:2px 0;transition:border-color .15s;}
+  .cc-input:focus{border-bottom-color:var(--accent);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>Aksjesparekonto</h1>
+    <h2>Portfolio Overview</h2>
+  </div>
+  <div class="inputs-row">
+    <div class="input-group">
+      <label>Total portfolio value (NOK)</label>
+      <input class="nok-input" id="inputTotal" value="100000" oninput="update()">
+      <div class="input-sub" id="subTotal">6 funds</div>
+    </div>
+    <div class="input-group">
+      <label>Monthly savings (NOK)</label>
+      <input class="nok-input" id="inputMonthly" value="1000" oninput="update()">
+      <div class="input-sub" id="subMonthly"></div>
+    </div>
+    <div class="input-group">
+      <label>Projected return (%)</label>
+      <input class="nok-input" id="inputReturn" value="7" oninput="update()" style="width:100px;">
+      <div class="input-sub">Annual, nominal</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOP STAT CARDS: costs -->
+<div class="grid-2" style="margin-bottom:1.5rem;">
+  <div class="stat-card" style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div class="stat-label">Annual cost</div>
+      <div class="stat-value" id="statCostAnn">—</div>
+      <div class="stat-sub" id="statTer">— blended TER</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="stat-label">Monthly cost</div>
+      <div class="stat-value" id="statCostMo">—</div>
+      <div class="stat-sub">On current value</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total funds</div>
+    <div class="stat-value" id="statFunds">—</div>
+    <div class="stat-sub">Active positions</div>
+  </div>
+</div>
+
+<!-- REGION STAT CARDS -->
+<div class="grid-6" id="regionStatCards"></div>
+
+<!-- FUNDS + DONUT -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+      Fund holdings
+      <span class="total-warn" id="totalWarn">⚠ weights ≠ 100%</span>
+    </div>
+    <table class="fund-table">
+      <thead><tr><th>Fund</th><th>Weight</th><th>Cost</th><th>Value (NOK)</th><th>Monthly</th></tr></thead>
+      <tbody id="fundBody"></tbody>
+    </table>
+    <div class="cost-box">
+      <div><div class="lbl">Estimated annual cost</div><div style="font-size:11px;color:var(--dim);margin-top:2px;" id="costBoxSub">—</div></div>
+      <div class="val" id="costBoxVal">—</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Allocation by fund</div>
+    <div style="position:relative;height:220px;"><canvas id="donutChart"></canvas></div>
+    <div class="donut-legend" id="donutLegend"></div>
+  </div>
+</div>
+
+<!-- REGIONAL DIVERSITY TABLE -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-title">Regional diversity vs ACWI IMI benchmark</div>
+  <div class="region-row hdr">
+    <div>Region</div><div>Portfolio vs benchmark</div>
+    <div style="text-align:right;">Portfolio</div><div style="text-align:right;">ACWI</div>
+    <div style="text-align:right;">Diff</div><div style="text-align:center;">Tilt</div>
+  </div>
+  <div id="regionTableBody"></div>
+</div>
+
+<!-- REGION CHART + PROJECTIONS side by side -->
+<div class="grid-2" style="margin-bottom:1.5rem;">
+  <div class="card">
+    <div class="card-title">Regional allocation vs ACWI IMI</div>
+    <div style="position:relative;height:260px;"><canvas id="regionChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title" id="projTitle">Growth projections (7% annual return assumed)</div>
+    <div class="grid-3" id="projCards"></div>
+    <div style="margin-top:.75rem;margin-bottom:.5rem;">
+      <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.05em;">
+        <input type="checkbox" id="showFees" onchange="update()" style="accent-color:var(--accent);cursor:pointer;">
+        Show impact of fees
+      </label>
+    </div>
+    <div style="position:relative;height:200px;"><canvas id="projChart"></canvas></div>
+    <div id="feeDrag" style="font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:.5rem;display:none;"></div>
+    <div style="font-size:11px;color:var(--dim);margin-top:.25rem;">Illustrative only. Includes monthly savings. Not financial advice.</div>
+  </div>
+</div>
+
+<!-- COST COMPARISON -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-title">Cost impact simulator</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;">Adjust fund TERs below to compare against your current allocation. See how cost changes compound over time.</div>
+  <div id="costCompBody"></div>
+  <div style="margin-top:1rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+    <button onclick="resetCostComp()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--muted);font-family:var(--mono);font-size:11px;padding:6px 14px;cursor:pointer;letter-spacing:.05em;">Reset to actual</button>
+    <span style="font-family:var(--mono);font-size:12px;color:var(--dim);" id="costCompSummary"></span>
+  </div>
+  <div class="grid-3" id="costCompCards" style="margin-top:1rem;"></div>
+</div>
+
+<!-- EXPORT / IMPORT -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-title">Export / Import configuration</div>
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-start;">
+    <button onclick="exportToUrl()" class="action-btn" id="btnExport">Copy shareable link</button>
+    <button onclick="exportToClipboard()" class="action-btn">Copy as text</button>
+    <div style="flex:1;min-width:200px;">
+      <textarea id="importArea" placeholder="Paste a shared link or config text here…" style="width:100%;height:60px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:8px;resize:vertical;outline:none;"></textarea>
+      <button onclick="importConfig()" class="action-btn" style="margin-top:4px;">Import</button>
+    </div>
+  </div>
+  <div id="exportMsg" style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-top:8px;display:none;"></div>
+</div>
+
+<div class="footer">Data as of March 2026 · Regional weights calculated from fund factsheets · ACWI IMI benchmark as of Dec 31, 2025 · Fund costs from official factsheets</div>
+
+<script>
+// ─── FUND DATA ───────────────────────────────────────────────────────────────
+// Regional exposures for each fund (must sum to ~100 within each fund)
+// Regions: US, EU_EX_NO, EM, APAC, NO, OTHER
+const FUND_REGIONS = {
+  global:   { US:69.68, EU_EX_NO:14.22, EM:0,     APAC:8.06,  NO:0,    OTHER:8.04 },
+  em:       { US:0,     EU_EX_NO:0,     EM:98.79, APAC:1.21,  NO:0,    OTHER:0    },
+  sc:       { US:58.63, EU_EX_NO:10.68, EM:0,     APAC:17.40, NO:0,    OTHER:13.29},
+  sb:       { US:0,     EU_EX_NO:0,     EM:0,     APAC:0,     NO:100,  OTHER:0    },
+  europa:   { US:1.83,  EU_EX_NO:96.89, EM:0,     APAC:0.14,  NO:0.96, OTHER:0.18 },
+  asia:     { US:0,     EU_EX_NO:0.75,  EM:0.28,  APAC:98.73, NO:0,    OTHER:0.24 },
+};
+
+const ACWI = { US:62.7, EU_EX_NO:14.1, EM:11.3, APAC:8.0, NO:0.2, OTHER:3.7 };
+const REGION_LABELS = {
+  US:'United States', EU_EX_NO:'EU ex Norway', EM:'Emerging Markets',
+  APAC:'Asia Pacific', NO:'Norway', OTHER:'Canada / Other'
+};
+const REGION_ORDER = ['US','EU_EX_NO','EM','APAC','NO','OTHER'];
+
+// Mutable fund weights (start at defaults)
+const FUNDS = [
+  { id:'global', name:'KLP AksjeGlobal Indeks N',         short:'KLP Global',       weight:55, cost:0.25, color:'#c8f060' },
+  { id:'em',     name:'KLP AksjeFremvoksende Markeder',   short:'KLP Fremvoksende', weight:15, cost:0.33, color:'#1D9E75' },
+  { id:'sc',     name:'KLP AksjeGlobal Small Cap Indeks', short:'KLP Small Cap',    weight:10, cost:0.40, color:'#534AB7' },
+  { id:'sb',     name:'SpareBank 1 Norge Verdi N',         short:'SpareBank Norge',  weight:10, cost:1.04, color:'#f0a060' },
+  { id:'europa', name:'DNB Europa Indeks A',               short:'DNB Europa',       weight:5,  cost:0.25, color:'#D85A30' },
+  { id:'asia',   name:'KLP AksjeAsia Indeks N',            short:'KLP Asia',         weight:5,  cost:0.25, color:'#888'    },
+];
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function n(str){ return parseFloat(String(str).replace(/\s/g,'').replace(/,/g,'.')) || 0; }
+function fmt(v){ return Math.round(v).toLocaleString('nb-NO'); }
+function fmtM(v){ return (v/1e6).toFixed(2)+' M'; }
+function fmtPct(v){ return v.toFixed(1)+'%'; }
+function costColor(c){ return c>0.40?'var(--over)':c<=0.25?'var(--green)':'var(--muted)'; }
+function sign(v){ return v>=0?'+':'-'; }
+function diffColor(d){ return d>1.5?'var(--over)':d<-1.5?'var(--under)':'var(--neutral)'; }
+
+function calcRegions(){
+  const reg = {};
+  REGION_ORDER.forEach(r => reg[r]=0);
+  const totalW = FUNDS.reduce((s,f)=>s+f.weight,0);
+  if(totalW===0) return reg;
+  FUNDS.forEach(f => {
+    const w = f.weight / totalW; // normalise so always sums to 100
+    const fr = FUND_REGIONS[f.id];
+    REGION_ORDER.forEach(r => { reg[r] += w * (fr[r]||0); });
+  });
+  return reg;
+}
+
+function blendedTer(){
+  const totalW = FUNDS.reduce((s,f)=>s+f.weight,0);
+  if(totalW===0) return 0;
+  return FUNDS.reduce((s,f)=>s+(f.weight/totalW)*f.cost,0)/100;
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+let donutChart, regionChart, projChart;
+
+function initDonut(){
+  donutChart = new Chart(document.getElementById('donutChart'),{
+    type:'doughnut',
+    data:{ labels:FUNDS.map(f=>f.short), datasets:[{ data:FUNDS.map(f=>f.weight), backgroundColor:FUNDS.map(f=>f.color), borderWidth:0, hoverOffset:6 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+ctx.parsed+'%'}} } }
+  });
+}
+
+function initRegionChart(){
+  regionChart = new Chart(document.getElementById('regionChart'),{
+    type:'bar',
+    data:{ labels:['US','EU ex NO','EM','Asia Pac','Norway','Other'], datasets:[
+      { label:'Portfolio', data:[], backgroundColor:'#c8f060', borderRadius:3, borderSkipped:false },
+      { label:'ACWI IMI',  data:REGION_ORDER.map(r=>ACWI[r]), backgroundColor:'rgba(136,136,136,0.25)', borderRadius:3, borderSkipped:false }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:true,labels:{color:'#888',font:{size:11},boxWidth:10,boxHeight:10}}, tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+'%'}} },
+      scales:{ x:{grid:{display:false},ticks:{color:'#666',font:{size:11}}}, y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#666',font:{size:11},callback:v=>v+'%'},max:70} }
+    }
+  });
+}
+
+function initProjChart(labels, vals, netVals){
+  const datasets = [
+    { label:'Before fees', data:vals, borderColor:'#c8f060', backgroundColor:'rgba(200,240,96,0.07)', borderWidth:2, pointRadius:0, fill:true, tension:0.3 }
+  ];
+  if(netVals){
+    datasets.push({ label:'After fees', data:netVals, borderColor:'var(--red)', backgroundColor:'rgba(224,96,96,0.07)', borderWidth:2, pointRadius:0, fill:true, tension:0.3, borderDash:[6,3] });
+  }
+  projChart = new Chart(document.getElementById('projChart'),{
+    type:'line',
+    data:{ labels, datasets },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:!!netVals,labels:{color:'#888',font:{size:11},boxWidth:10,boxHeight:10}}, tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.parsed.y)+' NOK'}} },
+      scales:{ x:{grid:{display:false},ticks:{color:'#666',font:{size:11},maxTicksLimit:5}}, y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#666',font:{size:11},callback:v=>fmtM(v)}} }
+    }
+  });
+}
+
+// ─── BUILD FUND TABLE (once on init — contains the inputs) ───────────────────
+function initFundTable(){
+  const rows = FUNDS.map((f,i) => `<tr id="frow_${i}">
+    <td>
+      <div class="fund-name">${f.name}</div>
+      <div class="fund-sub" id="fsub_${i}">${f.short}</div>
+    </td>
+    <td style="min-width:90px;">
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
+        <input class="weight-input" id="w_${i}" type="text" value="${f.weight}" oninput="onWeightChange(${i},this.value)">
+        <span class="weight-pct">%</span>
+      </div>
+      <div class="w-bar-outer"><div class="w-bar-inner" id="wbar_${i}" style="width:${Math.min(f.weight,100)}%;background:${f.color};"></div></div>
+    </td>
+    <td style="color:${costColor(f.cost)};">${f.cost.toFixed(2)}%</td>
+    <td id="fval_${i}">—</td>
+    <td id="fmo_${i}" style="color:var(--accent);">—</td>
+  </tr>`).join('');
+  // total row (static structure, dynamic content patched separately)
+  const totalRow = `<tr id="frow_total" style="border-top:1px solid var(--border2);">
+    <td style="padding-top:11px;"><div class="fund-name" style="color:var(--muted);">Total</div></td>
+    <td style="padding-top:11px;text-align:right;font-family:var(--mono);font-size:13px;" id="ftotal_w">—</td>
+    <td style="padding-top:11px;color:var(--muted);" id="ftotal_ter">—</td>
+    <td style="padding-top:11px;font-family:var(--mono);font-size:13px;color:var(--accent);" id="ftotal_val">—</td>
+    <td style="padding-top:11px;font-family:var(--mono);font-size:13px;color:var(--accent);" id="ftotal_mo">—</td>
+  </tr>`;
+  document.getElementById('fundBody').innerHTML = rows + totalRow;
+}
+
+// ─── UPDATE FUND TABLE (patches only non-input cells) ────────────────────────
+function updateFundTable(total, monthly){
+  const totalW = FUNDS.reduce((s,f)=>s+f.weight,0);
+  document.getElementById('totalWarn').style.display = Math.abs(totalW-100)>0.5 ? 'inline' : 'none';
+
+  FUNDS.forEach((f,i) => {
+    const normW = totalW>0 ? f.weight/totalW : 0;
+    const val = Math.round(total * normW);
+    const mo = Math.round(monthly * normW);
+    const feeCost = Math.round(val * f.cost/100);
+    document.getElementById('fsub_'+i).textContent = f.short+' · est. '+fmt(feeCost)+' NOK/yr';
+    document.getElementById('fval_'+i).textContent = fmt(val);
+    document.getElementById('fmo_'+i).textContent = fmt(mo);
+    const bar = document.getElementById('wbar_'+i);
+    if(bar) bar.style.width = Math.min(f.weight,100)+'%';
+  });
+
+  const ter = blendedTer();
+  const totalEl = document.getElementById('ftotal_w');
+  totalEl.textContent = totalW.toFixed(0)+'%';
+  totalEl.style.color = Math.abs(totalW-100)>0.5 ? 'var(--red)' : 'var(--accent)';
+  document.getElementById('ftotal_ter').textContent = (ter*100).toFixed(3)+'%';
+  document.getElementById('ftotal_val').textContent = fmt(total);
+  document.getElementById('ftotal_mo').textContent = fmt(monthly);
+}
+
+// ─── WEIGHT CHANGE HANDLER ───────────────────────────────────────────────────
+function onWeightChange(i, val){
+  const v = parseFloat(val);
+  FUNDS[i].weight = isNaN(v)||v<0 ? 0 : Math.min(v, 100);
+  update();
+}
+
+// ─── BUILD REGION STAT CARDS ─────────────────────────────────────────────────
+const REGION_COLORS = { US:'var(--under)', EU_EX_NO:'var(--accent)', EM:'var(--over)', APAC:'#1D9E75', NO:'#f0a060', OTHER:'var(--muted)' };
+
+function buildRegionStatCards(reg){
+  const container = document.getElementById('regionStatCards');
+  container.innerHTML = REGION_ORDER.map(r => {
+    const p = reg[r];
+    const a = ACWI[r];
+    const d = p - a;
+    const col = diffColor(d);
+    const sign = d>=0?'+':'';
+    return `<div class="stat-card">
+      <div class="stat-label">${REGION_LABELS[r]}</div>
+      <div class="stat-value" style="color:${REGION_COLORS[r]};">${fmtPct(p)}</div>
+      <div class="stat-diff" style="color:${col};">${sign}${d.toFixed(1)}pp vs ACWI</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── BUILD REGION TABLE ───────────────────────────────────────────────────────
+function buildRegionTable(reg){
+  const body = document.getElementById('regionTableBody');
+  body.innerHTML = REGION_ORDER.map(r => {
+    const p = reg[r];
+    const a = ACWI[r];
+    const d = p - a;
+    const col = diffColor(d);
+    const signStr = d>=0?'+':'';
+    const pct = Math.min(p, 70); // scale bar max 70%
+    const apct = Math.min(a, 70);
+    let pillCls, pillTxt;
+    if(d>1.5){ pillCls='pill-over'; pillTxt='Overweight'; }
+    else if(d<-1.5){ pillCls='pill-under'; pillTxt='Underweight'; }
+    else { pillCls='pill-neutral'; pillTxt='Neutral'; }
+    return `<div class="region-row">
+      <div class="region-name">${REGION_LABELS[r]}</div>
+      <div><div style="height:4px;width:100%;position:relative;background:var(--border2);border-radius:2px;">
+        <div style="position:absolute;top:0;left:0;height:4px;width:${apct/70*100}%;background:rgba(136,136,136,0.25);border-radius:2px;"></div>
+        <div style="position:absolute;top:0;left:0;height:4px;width:${pct/70*100}%;background:${col};border-radius:2px;transition:width .3s;"></div>
+      </div></div>
+      <div class="region-num">${fmtPct(p)}</div>
+      <div class="region-num" style="color:var(--dim);">${fmtPct(a)}</div>
+      <div class="region-diff" style="color:${col};">${signStr}${Math.abs(d).toFixed(1)}pp</div>
+      <div style="text-align:center;"><span class="pill ${pillCls}">${pillTxt}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ─── UPDATE DONUT LEGEND ─────────────────────────────────────────────────────
+function updateDonutLegend(){
+  document.getElementById('donutLegend').innerHTML = FUNDS.map(f =>
+    `<div class="dleg"><span class="dleg-dot" style="background:${f.color};"></span>${f.short}<span class="dleg-val">${f.weight.toFixed(0)}%</span></div>`
+  ).join('');
+}
+
+// ─── MAIN UPDATE ─────────────────────────────────────────────────────────────
+function update(){
+  const total   = n(document.getElementById('inputTotal').value);
+  const monthly = n(document.getElementById('inputMonthly').value);
+
+  document.getElementById('subMonthly').textContent = '≈ '+fmt(monthly*12)+' NOK / year';
+
+  const ter     = blendedTer();
+  const annCost = Math.round(total * ter);
+  const totalW  = FUNDS.reduce((s,f)=>s+f.weight,0);
+  const activeFunds = FUNDS.filter(f=>f.weight>0).length;
+
+  document.getElementById('statCostAnn').textContent  = fmt(annCost)+' NOK';
+  document.getElementById('statCostMo').textContent   = fmt(Math.round(annCost/12))+' NOK';
+  document.getElementById('statTer').textContent      = (ter*100).toFixed(3)+'% blended TER';
+  document.getElementById('statFunds').textContent    = activeFunds;
+  document.getElementById('costBoxVal').textContent   = fmt(annCost)+' NOK / yr';
+  document.getElementById('costBoxSub').textContent   = (ter*100).toFixed(3)+'% blended TER on total portfolio';
+
+  const reg = calcRegions();
+
+  buildRegionStatCards(reg);
+  updateFundTable(total, monthly);
+  updateDonutLegend();
+  buildRegionTable(reg);
+
+  // update donut
+  donutChart.data.datasets[0].data = FUNDS.map(f=>f.weight);
+  donutChart.update('none');
+
+  // update region chart
+  regionChart.data.datasets[0].data = REGION_ORDER.map(r=>reg[r]);
+  regionChart.update('none');
+
+  // projections
+  const rPct = n(document.getElementById('inputReturn').value);
+  const r = (isNaN(rPct)||rPct===0) ? 0 : rPct/100;
+  const showFees = document.getElementById('showFees').checked;
+  const rNet = r - ter;
+
+  const fv = (rate, y) => {
+    if(rate===0) return total + monthly*12*y;
+    return total * Math.pow(1+rate,y) + monthly*12*((Math.pow(1+rate,y)-1)/rate);
+  };
+
+  document.getElementById('projTitle').textContent = 'Growth projections ('+rPct+'% annual return assumed)';
+  document.getElementById('projCards').innerHTML = [5,10,20].map(y => {
+    const gross = fv(r,y);
+    const net = fv(rNet,y);
+    const diff = gross - net;
+    const sub = showFees ? `After fees: ${fmt(Math.round(net))} NOK · <span style="color:var(--red);">−${fmt(Math.round(diff))}</span>` : `${fmt(Math.round(gross))} NOK`;
+    return `<div class="stat-card"><div class="stat-label">${y} years</div><div class="stat-value">${fmtM(gross)}</div><div class="stat-sub">${sub}</div></div>`;
+  }).join('');
+
+  const labels=[],vals=[],netVals=[];
+  for(let y=0;y<=20;y++){
+    labels.push(y===0?'Now':'Yr '+y);
+    vals.push(Math.round(fv(r,y)));
+    netVals.push(Math.round(fv(rNet,y)));
+  }
+
+  // Fee drag summary
+  const dragEl = document.getElementById('feeDrag');
+  if(showFees){
+    const drag20 = vals[20] - netVals[20];
+    dragEl.innerHTML = 'Total fee drag over 20 years: <span style="color:var(--red);">−'+fmt(drag20)+' NOK</span> (blended TER '+(ter*100).toFixed(3)+'%)';
+    dragEl.style.display = 'block';
+  } else {
+    dragEl.style.display = 'none';
+  }
+
+  if(!projChart){
+    initProjChart(labels, vals, showFees ? netVals : null);
+  } else {
+    projChart.data.labels = labels;
+    projChart.data.datasets[0].data = vals;
+    if(showFees){
+      if(projChart.data.datasets.length < 2){
+        projChart.data.datasets.push({ label:'After fees', data:netVals, borderColor:'#e06060', backgroundColor:'rgba(224,96,96,0.07)', borderWidth:2, pointRadius:0, fill:true, tension:0.3, borderDash:[6,3] });
+      } else {
+        projChart.data.datasets[1].data = netVals;
+      }
+      projChart.options.plugins.legend.display = true;
+    } else {
+      if(projChart.data.datasets.length > 1) projChart.data.datasets.pop();
+      projChart.options.plugins.legend.display = false;
+    }
+    projChart.update('none');
+  }
+
+  // cost comparison
+  updateCostComp();
+
+  // update active fund count
+  document.getElementById('subTotal').textContent = activeFunds+' funds';
+}
+
+// ─── COST COMPARISON ────────────────────────────────────────────────────────
+let altCosts = FUNDS.map(f => f.cost); // start same as actual
+
+function buildCostComp(){
+  const hdr = `<div class="cc-row cc-hdr"><div>Fund</div><div style="text-align:right;">Actual TER</div><div style="text-align:right;">Alt TER</div><div style="text-align:right;">Saving/yr</div></div>`;
+  const rows = FUNDS.map((f,i) => `<div class="cc-row">
+    <div style="font-size:13px;">${f.short}</div>
+    <div style="text-align:right;font-family:var(--mono);font-size:13px;color:var(--dim);">${f.cost.toFixed(2)}%</div>
+    <div style="text-align:right;"><input class="cc-input" id="cc_${i}" type="text" value="${altCosts[i].toFixed(2)}" oninput="onAltCostChange(${i},this.value)">%</div>
+    <div style="text-align:right;font-family:var(--mono);font-size:12px;" id="cc_save_${i}">—</div>
+  </div>`).join('');
+  document.getElementById('costCompBody').innerHTML = hdr + rows;
+}
+
+function onAltCostChange(i, val){
+  const v = parseFloat(val);
+  altCosts[i] = isNaN(v)||v<0 ? 0 : Math.min(v, 10);
+  updateCostComp();
+}
+
+function resetCostComp(){
+  altCosts = FUNDS.map(f => f.cost);
+  FUNDS.forEach((f,i) => { document.getElementById('cc_'+i).value = f.cost.toFixed(2); });
+  updateCostComp();
+}
+
+function updateCostComp(){
+  const total = n(document.getElementById('inputTotal').value);
+  const monthly = n(document.getElementById('inputMonthly').value);
+  const rPct = n(document.getElementById('inputReturn').value);
+  const r = (isNaN(rPct)||rPct===0) ? 0 : rPct/100;
+  const totalW = FUNDS.reduce((s,f)=>s+f.weight,0);
+  if(totalW===0) return;
+
+  let totalSaveYr = 0;
+  FUNDS.forEach((f,i) => {
+    const normW = f.weight / totalW;
+    const val = total * normW;
+    const actualCost = Math.round(val * f.cost / 100);
+    const altCost = Math.round(val * altCosts[i] / 100);
+    const save = actualCost - altCost;
+    totalSaveYr += save;
+    const el = document.getElementById('cc_save_'+i);
+    if(el){
+      el.textContent = (save>=0?'+':'')+fmt(save)+' NOK';
+      el.style.color = save>0?'var(--green)':save<0?'var(--red)':'var(--dim)';
+    }
+  });
+
+  const summaryEl = document.getElementById('costCompSummary');
+  if(totalSaveYr!==0){
+    summaryEl.textContent = (totalSaveYr>0?'Saving ':'Extra cost ')+fmt(Math.abs(totalSaveYr))+' NOK/yr';
+    summaryEl.style.color = totalSaveYr>0?'var(--green)':'var(--red)';
+  } else {
+    summaryEl.textContent = 'No difference';
+    summaryEl.style.color = 'var(--dim)';
+  }
+
+  // Compound impact over 10 and 20 years
+  const actTer = blendedTer();
+  const altTerVal = FUNDS.reduce((s,f,i)=>s+(f.weight/totalW)*altCosts[i],0)/100;
+  const fvWith = (ter,y) => {
+    const rNet = r - ter;
+    if(rNet===0) return total + monthly*12*y;
+    return total * Math.pow(1+rNet,y) + monthly*12*((Math.pow(1+rNet,y)-1)/rNet);
+  };
+
+  const cards = [10,20].map(y => {
+    const curr = fvWith(actTer, y);
+    const alt = fvWith(altTerVal, y);
+    const diff = alt - curr;
+    const col = diff>0?'var(--green)':diff<0?'var(--red)':'var(--dim)';
+    return `<div class="stat-card"><div class="stat-label">${y}yr impact</div><div class="stat-value" style="color:${col};">${diff>=0?'+':''}${fmt(Math.round(diff))}</div><div class="stat-sub">NOK difference after ${y} years</div></div>`;
+  });
+  // add current vs alt blended TER card
+  cards.unshift(`<div class="stat-card"><div class="stat-label">Blended TER</div><div class="stat-value">${(actTer*100).toFixed(3)}% → ${(altTerVal*100).toFixed(3)}%</div><div class="stat-sub">${totalSaveYr>0?'Saving':'Extra'} ${fmt(Math.abs(totalSaveYr))} NOK/yr</div></div>`);
+  document.getElementById('costCompCards').innerHTML = cards.join('');
+}
+
+// ─── EXPORT / IMPORT ────────────────────────────────────────────────────────
+function getConfig(){
+  return {
+    total: document.getElementById('inputTotal').value,
+    monthly: document.getElementById('inputMonthly').value,
+    ret: document.getElementById('inputReturn').value,
+    weights: FUNDS.map(f=>f.weight),
+  };
+}
+
+function applyConfig(cfg){
+  if(!cfg || typeof cfg !== 'object') return false;
+  // Only accept expected keys — reject anything extra
+  const allowed = new Set(['total','monthly','ret','weights']);
+  for(const k of Object.keys(cfg)){ if(!allowed.has(k)) return false; }
+
+  // Validate and sanitize each field as a number within sane bounds
+  const sNum = (v, min, max) => { const p = parseFloat(v); return (isNaN(p)||p<min||p>max) ? null : p; };
+
+  if(cfg.total != null){
+    const v = sNum(cfg.total, 0, 1e12);
+    if(v===null) return false;
+    document.getElementById('inputTotal').value = v;
+  }
+  if(cfg.monthly != null){
+    const v = sNum(cfg.monthly, 0, 1e9);
+    if(v===null) return false;
+    document.getElementById('inputMonthly').value = v;
+  }
+  if(cfg.ret != null){
+    const v = sNum(cfg.ret, -50, 100);
+    if(v===null) return false;
+    document.getElementById('inputReturn').value = v;
+  }
+  if(cfg.weights != null){
+    if(!Array.isArray(cfg.weights) || cfg.weights.length !== FUNDS.length) return false;
+    const parsed = cfg.weights.map(w => sNum(w, 0, 100));
+    if(parsed.some(w => w===null)) return false;
+    parsed.forEach((w,i) => {
+      FUNDS[i].weight = w;
+      const el = document.getElementById('w_'+i);
+      if(el) el.value = w;
+    });
+  }
+  update();
+  return true;
+}
+
+function configToHash(cfg){
+  return btoa(JSON.stringify(cfg));
+}
+
+function hashToConfig(hash){
+  // Reject oversized payloads (legit configs are ~100 chars base64)
+  if(typeof hash !== 'string' || hash.length > 2000) return null;
+  // Only allow base64 characters
+  if(!/^[A-Za-z0-9+/=]+$/.test(hash)) return null;
+  try { return JSON.parse(atob(hash)); } catch(e){ return null; }
+}
+
+function showExportMsg(msg){
+  const el = document.getElementById('exportMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(()=>{ el.style.display='none'; }, 3000);
+}
+
+function exportToUrl(){
+  const cfg = getConfig();
+  const hash = configToHash(cfg);
+  const url = window.location.origin + window.location.pathname + '#' + hash;
+  navigator.clipboard.writeText(url).then(()=>{
+    showExportMsg('Link copied to clipboard');
+  }).catch(()=>{
+    document.getElementById('importArea').value = url;
+    showExportMsg('Link generated — copy from the text area');
+  });
+}
+
+function exportToClipboard(){
+  const total = n(document.getElementById('inputTotal').value);
+  const monthly = n(document.getElementById('inputMonthly').value);
+  const totalW = FUNDS.reduce((s,f)=>s+f.weight,0);
+  let txt = 'Portfolio Summary\n';
+  txt += '─────────────────\n';
+  txt += 'Total value: '+fmt(total)+' NOK\n';
+  txt += 'Monthly savings: '+fmt(monthly)+' NOK\n';
+  txt += 'Blended TER: '+(blendedTer()*100).toFixed(3)+'%\n\n';
+  txt += 'Fund Allocations:\n';
+  FUNDS.forEach(f => {
+    const normW = totalW>0 ? f.weight/totalW : 0;
+    const val = Math.round(total * normW);
+    const mo = Math.round(monthly * normW);
+    txt += '  '+f.short+': '+f.weight+'% — '+fmt(val)+' NOK — '+fmt(mo)+' NOK/mo — TER '+f.cost.toFixed(2)+'%\n';
+  });
+  navigator.clipboard.writeText(txt).then(()=>{
+    showExportMsg('Summary copied to clipboard');
+  }).catch(()=>{
+    document.getElementById('importArea').value = txt;
+    showExportMsg('Summary generated — copy from the text area');
+  });
+}
+
+function importConfig(){
+  const raw = document.getElementById('importArea').value.trim();
+  if(!raw){ showExportMsg('Nothing to import'); return; }
+  // Try URL with hash
+  const hashIdx = raw.indexOf('#');
+  if(hashIdx !== -1){
+    const cfg = hashToConfig(raw.substring(hashIdx+1));
+    if(cfg && applyConfig(cfg)){ showExportMsg('Configuration imported'); return; }
+  }
+  // Try raw base64
+  const cfg = hashToConfig(raw);
+  if(cfg && applyConfig(cfg)){ showExportMsg('Configuration imported'); return; }
+  showExportMsg('Invalid configuration — use a shareable link');
+}
+
+function loadFromHash(){
+  if(window.location.hash && window.location.hash.length > 1){
+    const cfg = hashToConfig(window.location.hash.substring(1));
+    if(cfg) applyConfig(cfg); // silently fails if invalid
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+initDonut();
+initRegionChart();
+initFundTable();
+buildCostComp();
+loadFromHash();
+update();
+</script>
+</body>
+</html>
