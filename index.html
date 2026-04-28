@@ -364,7 +364,7 @@ function initProjChart(labels, vals, netVals){
     type:'line',
     data:{ labels, datasets:[
       { label:'Gross value', data:vals, borderColor:'#c8f060', backgroundColor:'rgba(200,240,96,0.07)', borderWidth:2, pointRadius:0, fill:true, tension:0.3 },
-      { label:'Net value (after fees)', data:netVals, borderColor:'#1D9E75', borderWidth:2, pointRadius:0, fill:false, tension:0.3, borderDash:[5,5] }
+      { label:'Net value (after fees)', data:netVals, borderColor:'#e06060', borderWidth:2, pointRadius:0, fill:false, tension:0.3, borderDash:[5,5] }
     ]},
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:true, labels:{color:'#8a8a8a',font:{size:11},boxWidth:12,boxHeight:2}}, tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.parsed.y)+' NOK'}} },
@@ -546,23 +546,28 @@ function update(){
   document.getElementById('projTitle').textContent = 'Growth projections' + titleSuffix;
 
   // Render cards based on Net values to be more realistic, or gross (we'll stick to net)
-  document.getElementById('projCards').innerHTML = [5,10,20].map(y =>
-    `<div class="stat-card"><div class="stat-label">${y} years (Net)</div><div class="stat-value">${fmtM(fvNet(y))}</div><div class="stat-sub">${fmt(fvNet(y))} NOK</div></div>`
-  ).join('');
+  const titleSuffix = real
+    ? ` (${rPct}% nominal − ${INFLATION_PCT}% inflation = ${(rPct-INFLATION_PCT).toFixed(1)}% real)`
+    : ` (${rPct}% nominal return)`;
+  document.getElementById('projTitle').textContent = 'Growth projections' + titleSuffix;
+
+  // Render 20-year summary table cards: Gross, Net, and Total Fees
+  const targetYear = 20;
+  const grossVal = fv(targetYear);
+  const netVal = fvNet(targetYear);
+  const totalFees = grossVal - netVal;
+  
+  document.getElementById('projCards').innerHTML = `
+    <div class="stat-card"><div class="stat-label">${targetYear}yr Gross Value</div><div class="stat-value">${fmtM(grossVal)}</div><div class="stat-sub">${fmt(Math.round(grossVal))} NOK</div></div>
+    <div class="stat-card"><div class="stat-label">${targetYear}yr Net (After Fees)</div><div class="stat-value" style="color:var(--accent);">${fmtM(netVal)}</div><div class="stat-sub">${fmt(Math.round(netVal))} NOK</div></div>
+    <div class="stat-card"><div class="stat-label">${targetYear}yr Total Fees</div><div class="stat-value" style="color:var(--red);">${fmtM(totalFees)}</div><div class="stat-sub">${fmt(Math.round(totalFees))} NOK lost to fees</div></div>
+  `;
   
   const labels=[],vals=[],netVals=[];
   for(let y=0;y<=20;y++){
     labels.push(y===0?'Now':'Yr '+y);
     vals.push(Math.round(fv(y)));
     netVals.push(Math.round(fvNet(y)));
-  }
-  
-  if(!projChart){ initProjChart(labels,vals,netVals); }
-  else{ 
-    projChart.data.labels=labels; 
-    projChart.data.datasets[0].data=vals; 
-    projChart.data.datasets[1].data=netVals; 
-    projChart.update('none'); 
   }
 
   updateCostComp();
