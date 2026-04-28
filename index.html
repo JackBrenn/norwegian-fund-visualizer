@@ -545,12 +545,6 @@ function update(){
     : ` (${rPct}% nominal return)`;
   document.getElementById('projTitle').textContent = 'Growth projections' + titleSuffix;
 
-  // Render cards based on Net values to be more realistic, or gross (we'll stick to net)
-  const titleSuffix = real
-    ? ` (${rPct}% nominal − ${INFLATION_PCT}% inflation = ${(rPct-INFLATION_PCT).toFixed(1)}% real)`
-    : ` (${rPct}% nominal return)`;
-  document.getElementById('projTitle').textContent = 'Growth projections' + titleSuffix;
-
   // Render 20-year summary table cards: Gross, Net, and Total Fees
   const targetYear = 20;
   const grossVal = fv(targetYear);
@@ -568,6 +562,16 @@ function update(){
     labels.push(y===0?'Now':'Yr '+y);
     vals.push(Math.round(fv(y)));
     netVals.push(Math.round(fvNet(y)));
+  }
+
+  // Render/Update the projection chart
+  if (!projChart) {
+    initProjChart(labels, vals, netVals);
+  } else {
+    projChart.data.labels = labels;
+    projChart.data.datasets[0].data = vals;
+    projChart.data.datasets[1].data = netVals;
+    projChart.update('none');
   }
 
   updateCostComp();
